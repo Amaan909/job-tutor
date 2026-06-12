@@ -1,0 +1,21 @@
+button{
+    border: none;
+    outline: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    
+    &.primary-button{
+        background-color: rgb(11, 81, 21);
+        color: white;
+        cursor: pointer;
+        &:hover{
+            background-color: rgba(1, 54, 9, 0.8);
+            transition: background-color 0.3s ease;
+        }
+    }
+
+    &:active{
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+}
