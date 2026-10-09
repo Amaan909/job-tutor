@@ -5,24 +5,12 @@ const cors = require('cors');
 const app = express();
 const authRouter = require('./routes/auth.routes');
 const interviewRouter = require('./routes/interview.routes');
+const connectDB = require('./config/database');
 
 app.use(express.json());
 app.use(cookieParser());
 app.set('trust proxy', 1);
 const mongoose = require('mongoose');
-
-app.get('/api/health', async (req, res) => {
-  try {
-    await connectDB();
-    res.json({
-      dbState: mongoose.connection.readyState,   // 1 = connected
-      hasMongoUri: !!process.env.MONGO_URI,
-      hasJwtSecret: !!process.env.JWT_SECRET,
-      hasOpenAiKey: !!process.env.OPENAI_API_KEY});
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 const allowedOrigins = [
     'http://localhost:5173',
@@ -36,6 +24,27 @@ app.use(cors({
     },
     credentials: true
 }));
+
+// Ensure the DB is connected before any route runs (serverless-safe)
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (err) {
+        console.error('DB connection error:', err.message);
+        res.status(500).json({ message: 'Database connection failed' });
+    }
+});
+
+// TEMPORARY: remove after debugging
+app.get('/api/health', (req, res) => {
+    res.json({
+        dbState: mongoose.connection.readyState,   // 1 = connected
+        hasMongoUri: !!process.env.MONGO_URI,
+        hasJwtSecret: !!process.env.JWT_SECRET,
+        nodeEnv: process.env.NODE_ENV
+    });
+});
 
 app.use('/api/auth', authRouter); // Import auth routes
 app.use('/api/interview', interviewRouter); // Import interview routes
