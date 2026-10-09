@@ -1,6 +1,5 @@
 // In @google/genai v0.7+, SchemaType was renamed to Type
 const { GoogleGenAI, Type } = require("@google/genai");
-const puppeteer = require("puppeteer");
 const { z } = require("zod");
 
 const interviewReportSchema = {
@@ -168,6 +167,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 }
 
 async function htmlToPdfBuffer(html) {
+    const puppeteer = require("puppeteer");
     console.time("launch");
     const browser = await puppeteer.launch();
     console.timeEnd("launch");
