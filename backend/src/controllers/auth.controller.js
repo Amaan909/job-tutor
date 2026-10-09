@@ -2,19 +2,21 @@ const userModel = require('../models/user.model');
 const tokenBlacklistModel = require('../models/blacklist.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { cookieOptions } = require('../config/cookie.config');
+const { registerSchema, loginSchema } = require('../validators/auth.validator');
 
 async function registerUserController(req, res) {
   try {
-    const { username, email, password } = req.body;
-
-    // Check if the user already exists
-    const existingUserName = await userModel.findOne({ username });
-    if (existingUserName) {
-      return res.status(400).json({ message: 'Username already exists' });
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: 'Invalid input', errors: parsed.error.issues });
     }
-    const existingUserEmail = await userModel.findOne({ email });
-    if (existingUserEmail) {
-      return res.status(400).json({ message: 'Email already exists' });
+    const { username, email, password } = parsed.data;
+
+    // Check if the user already exists (generic message to avoid enumeration)
+    const existingUser = await userModel.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Registration failed. Please try different credentials.' });
     }
 
     // Create a new user
@@ -26,7 +28,7 @@ async function registerUserController(req, res) {
     });
 
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('token', token)
+    res.cookie('token', token, cookieOptions)
 
     return res.status(201).json({ message: 'User registered successfully', user:{
       id: user._id,
@@ -42,7 +44,11 @@ async function registerUserController(req, res) {
 
 async function loginUserController(req, res) {
   try{
-    const { email, password } = req.body;
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: 'Invalid input', errors: parsed.error.issues });
+    }
+    const { email, password } = parsed.data;
 
     // Check if the user exists
     const user = await userModel.findOne({ email });
@@ -55,7 +61,7 @@ async function loginUserController(req, res) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('token', token)
+    res.cookie('token', token, cookieOptions)
 
     return res.status(200).json({ message: 'User logged in successfully', user:{
       id: user._id,
@@ -78,7 +84,7 @@ async function logoutUserController(req, res) {
     }
 
     await tokenBlacklistModel.create({ token });
-    res.clearCookie('token');
+    res.clearCookie('token', { httpOnly: cookieOptions.httpOnly, secure: cookieOptions.secure, sameSite: cookieOptions.sameSite });
     return res.status(200).json({ message: 'User logged out successfully' });
   }
   catch (error) {

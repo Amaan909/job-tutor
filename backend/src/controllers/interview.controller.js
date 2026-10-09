@@ -1,12 +1,14 @@
 const pdfParse = require('pdf-parse');
 const {generateInterviewReport, generateResumePdf} = require('../services/ai.service');
 const interviewReportModel = require('../models/interviewReport.model');
-const fs = require('fs');
 
 async function generateInterviewReportController(req, res) {
     try{
         const resumeFile = req.file;
-        
+        if (!resumeFile) {
+            return res.status(400).json({ message: 'Resume file (PDF) is required' });
+        }
+
         const parser = new pdfParse.PDFParse(Uint8Array.from(resumeFile.buffer));
         const pdfData = await parser.getText();
 
@@ -61,14 +63,13 @@ async function generateResumePdfController(req, res){
     const start = Date.now();
     try{
         const {interviewReportId} = req.params;
-        const interviewReport = await interviewReportModel.findById(interviewReportId);
+        const interviewReport = await interviewReportModel.findOne({ _id: interviewReportId, user: req.user.id });
         if(!interviewReport){
             return res.status(404).json({ message: 'Interview report not found' });
         }
 
         const {resume, selfDescription, jobDescription} = interviewReport;
         const resumePdfBuffer = await generateResumePdf({resume, selfDescription, jobDescription});
-        // const resumePdfBuffer = Buffer.from("Hello World");
 
         console.log(
             `PDF generated in ${Date.now() - start} ms`
@@ -78,12 +79,6 @@ async function generateResumePdfController(req, res){
             'Content-Type': 'application/pdf',
             'Content-Disposition': `attachment; filename=resume_${interviewReportId}.pdf`,
         });
-        fs.writeFileSync(
-        "./resume-test.pdf",
-        Buffer.from(resumePdfBuffer)
-        );
-        console.log(Buffer.isBuffer(resumePdfBuffer));
-        console.log(resumePdfBuffer.constructor.name);
         res.send(resumePdfBuffer);
     } catch (error) {
         console.error('Error generating resume PDF:', error);

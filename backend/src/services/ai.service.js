@@ -81,6 +81,17 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GEMINI_API_KEY,
 });
 
+const GEMINI_TIMEOUT_MS = 30000;
+
+function withTimeout(promise, ms, label = "Gemini timeout") {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(label)), ms)
+        )
+    ]);
+}
+
 async function generateInterviewReport({ resume, jobDescription, selfDescription }) {
     const jobDescriptionText = typeof jobDescription === "string"
         ? jobDescription
@@ -91,14 +102,17 @@ Job Description: ${jobDescriptionText}
 Resume: ${resume}
 Self Description: ${selfDescription}`;
 
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: interviewReportSchema,
-        },
-    });
+    const response = await withTimeout(
+        ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: interviewReportSchema,
+            },
+        }),
+        GEMINI_TIMEOUT_MS
+    );
 
     const parsed = JSON.parse(response.text);
     // console.log(JSON.stringify(parsed, null, 2));
@@ -129,7 +143,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description
                     `;
     console.log("Before Gemini");
-    const response = await Promise.race([
+    const response = await withTimeout(
         ai.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: prompt,
@@ -138,10 +152,8 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                 responseSchema: resumePdfSchema,
             },
         }),
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Gemini timeout")), 30000)
-        )
-    ]);
+        GEMINI_TIMEOUT_MS
+    );
 
     console.log("After Gemini");
 
