@@ -9,6 +9,20 @@ const interviewRouter = require('./routes/interview.routes');
 app.use(express.json());
 app.use(cookieParser());
 app.set('trust proxy', 1);
+const mongoose = require('mongoose');
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await connectDB();
+    res.json({
+      dbState: mongoose.connection.readyState,   // 1 = connected
+      hasMongoUri: !!process.env.MONGO_URI,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasOpenAiKey: !!process.env.OPENAI_API_KEY});
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 const allowedOrigins = [
     'http://localhost:5173',
