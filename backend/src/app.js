@@ -8,9 +8,19 @@ const interviewRouter = require('./routes/interview.routes');
 
 app.use(express.json());
 app.use(cookieParser());
+app.set('trust proxy', 1);
+
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://interview-ai-nu-rouge.vercel.app'   // no trailing slash
+].filter(Boolean);
+
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://interview-ai-nu-rouge.vercel.app/'], // Frontend URL
-    credentials: true // Allow cookies to be sent
+    origin: (origin, cb) => {
+        if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+        cb(new Error('Not allowed by CORS'));
+    },
+    credentials: true
 }));
 
 app.use('/api/auth', authRouter); // Import auth routes

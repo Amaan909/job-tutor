@@ -1,9 +1,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-    baseURL: 'http://localhost:3000',
+    baseURL: '',          // calls like '/api/interview/' now hit the same domain
     withCredentials: true
-})
+});
 
 export async function generateInterviewReport({ jobDescription, selfDescription, resume }) {
     try{
