@@ -9,7 +9,7 @@ const interviewRouter = require('./routes/interview.routes');
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://localhost:5173', // Frontend URL
+    origin: ['http://localhost:5173', 'https://interview-ai-nu-rouge.vercel.app/'], // Frontend URL
     credentials: true // Allow cookies to be sent
 }));
 
