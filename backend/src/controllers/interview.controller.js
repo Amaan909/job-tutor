@@ -3,37 +3,44 @@ const {generateInterviewReport, generateResumePdf} = require('../services/ai.ser
 const interviewReportModel = require('../models/interviewReport.model');
 
 async function generateInterviewReportController(req, res) {
-    try{
+    let stage = 'start';
+    try {
         const resumeFile = req.file;
         if (!resumeFile) {
             return res.status(400).json({ message: 'Resume file (PDF) is required' });
         }
 
-        const parser = new pdfParse.PDFParse(Uint8Array.from(resumeFile.buffer));
-        const pdfData = await parser.getText();
-
+        stage = 'pdf-parse';
+        const pdfData = await pdfParse(resumeFile.buffer);
         const resumeContent = pdfData.text;
 
         const { jobDescription, selfDescription } = req.body;
+
+        stage = 'gemini';
         const interviewReportResponse = await generateInterviewReport({
-            resume:resumeContent,
-            jobDescription, 
+            resume: resumeContent,
+            jobDescription,
             selfDescription
         });
 
+        stage = 'mongodb-save';
         const interViewReport = await interviewReportModel.create({
-            user:req.user.id,
+            user: req.user.id,
             resume: resumeContent,
             jobDescription,
             selfDescription,
             ...interviewReportResponse
-        })
+        });
+
         res.status(201).json({ message: "Interview report generated successfully", interviewReport: interViewReport });
-        }catch(error){
-            console.error('Error generating interview report:', error);
-            res.status(500).json({ message: 'Internal server error' });
-            debug: error.message 
-        }
+    } catch (error) {
+        console.error(`Error generating interview report [${stage}]:`, error);
+        res.status(500).json({
+            message: 'Internal server error',
+            stage,                       // TEMPORARY
+            debug: error.message         // TEMPORARY
+        });
+    }
 }
 
 async function getInterviewReportByIdController(req, res) {
