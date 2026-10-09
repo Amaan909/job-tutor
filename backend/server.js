@@ -5,7 +5,7 @@ const generateInterviewReport = require('./src/services/ai.service');
 const { jobDescription, selfDescription, resumeText } = require('./src/temp.js');
 
 // Connect to MongoDB
-connectDB();
+connectDB().catch(console.error);
 
 // generateInterviewReport({ resume: resumeText, jobDescription, selfDescription });
 
