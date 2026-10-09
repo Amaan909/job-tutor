@@ -32,6 +32,7 @@ async function generateInterviewReportController(req, res) {
         }catch(error){
             console.error('Error generating interview report:', error);
             res.status(500).json({ message: 'Internal server error' });
+            debug: error.message 
         }
 }
 
