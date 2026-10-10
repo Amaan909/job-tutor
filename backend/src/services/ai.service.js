@@ -177,9 +177,9 @@ async function htmlToPdfBuffer(html) {
             const puppeteer = puppeteerMod.default ?? puppeteerMod;
 
             browser = await puppeteer.launch({
-                args: puppeteer.defaultArgs({ args: chromium.args, headless: 'shell' }),
-                executablePath: await chromium.executablePath(),
-                headless: 'shell',
+            args: chromium.args,
+            executablePath: await chromium.executablePath(),
+            headless: 'shell',
             });
         } else {
             // Local dev: regular puppeteer with its own Chrome
