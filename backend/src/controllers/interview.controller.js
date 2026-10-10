@@ -36,9 +36,7 @@ async function generateInterviewReportController(req, res) {
     } catch (error) {
         console.error(`Error generating interview report [${stage}]:`, error);
         res.status(500).json({
-            message: 'Internal server error',
-            stage,                       // TEMPORARY
-            debug: error.message         // TEMPORARY
+            message: 'Internal server error'
         });
     }
 }
@@ -89,9 +87,9 @@ async function generateResumePdfController(req, res){
         });
         res.send(resumePdfBuffer);
     } catch (error) {
-        console.error('Error generating resume PDF:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
+    console.error('Error generating resume PDF:', error);
+    res.status(500).json({ message: 'Internal server error', debug: error.message });   // TEMPORARY
+}
 }
 
 module.exports = {

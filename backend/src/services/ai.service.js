@@ -167,22 +167,37 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 }
 
 async function htmlToPdfBuffer(html) {
-    const puppeteer = require("puppeteer");
-    console.time("launch");
-    const browser = await puppeteer.launch();
-    console.timeEnd("launch");
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    console.time("pdf");
-    const pdf = await page.pdf({ format: "A4", margin: {
-            top: "10mm",
-            bottom: "10mm",
-            left: "5mm",
-            right: "5mm"
-        } });
-    console.timeEnd("pdf");
-    await browser.close();
-    return pdf;
+    let browser;
+    try {
+        if (process.env.VERCEL) {
+            // Serverless: puppeteer-core + bundled serverless Chromium
+            const chromiumMod = await import('@sparticuz/chromium');
+            const chromium = chromiumMod.default ?? chromiumMod;
+            const puppeteerMod = await import('puppeteer-core');
+            const puppeteer = puppeteerMod.default ?? puppeteerMod;
+
+            browser = await puppeteer.launch({
+                args: puppeteer.defaultArgs({ args: chromium.args, headless: 'shell' }),
+                executablePath: await chromium.executablePath(),
+                headless: 'shell',
+            });
+        } else {
+            // Local dev: regular puppeteer with its own Chrome
+            const puppeteer = require('puppeteer');
+            browser = await puppeteer.launch();
+        }
+
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'load' });
+        const pdf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '10mm', bottom: '10mm', left: '5mm', right: '5mm' }
+        });
+        return Buffer.from(pdf);   // puppeteer returns a Uint8Array; Express needs a Buffer
+    } finally {
+        if (browser) await browser.close();
+    }
 }
 
 module.exports = { generateInterviewReport, generateResumePdf };

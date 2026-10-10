@@ -10,7 +10,6 @@ const connectDB = require('./config/database');
 app.use(express.json());
 app.use(cookieParser());
 app.set('trust proxy', 1);
-const mongoose = require('mongoose');
 
 const allowedOrigins = [
     'http://localhost:5173',
@@ -34,16 +33,6 @@ app.use(async (req, res, next) => {
         console.error('DB connection error:', err.message);
         res.status(500).json({ message: 'Database connection failed' });
     }
-});
-
-// TEMPORARY: remove after debugging
-app.get('/api/health', (req, res) => {
-    res.json({
-        dbState: mongoose.connection.readyState,   // 1 = connected
-        hasMongoUri: !!process.env.MONGO_URI,
-        hasJwtSecret: !!process.env.JWT_SECRET,
-        nodeEnv: process.env.NODE_ENV
-    });
 });
 
 app.use('/api/auth', authRouter); // Import auth routes
